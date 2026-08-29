@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.aethelon.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+    "MinecraftMixin",
+    "MultiPlayerGameModeMixin",
+    "KeyboardHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "aethelon.refmap.json"
+}

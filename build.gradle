@@ -1,0 +1,183 @@
+import java.security.MessageDigest
+
+plugins {
+    id 'fabric-loom' version '1.17.20'
+}
+
+version = "${minecraft_version}-${mod_version}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withSourcesJar()
+}
+
+loom {
+    mixin {
+        useLegacyMixinAp = true
+        defaultRefmapName = "aethelon.refmap.json"
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Pinned third-party mods. All 1.21.11 / fabric, fetched from Modrinth CDN at
+// build time and verified against their SHA-512 hashes. Nothing mod-authored is
+// committed to this repository.
+// ---------------------------------------------------------------------------
+def sharedMods = [
+    [
+        output: 'fabric-api-0.141.6+1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/P7dR8mSH/versions/6qAuTtLR/fabric-api-0.141.6%2B1.21.11.jar',
+        sha512: '852d3682c4f353fd0ca86546af8578513e8bcf628377fa9d49c556bc59c5024c69ab56c92fc6dfba11fed19e4316a3f5636e7e07fd3d96f7043b531aef59b637'
+    ],
+    [
+        output: 'lithium-0.21.4+mc1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/gvQqBUqZ/versions/Ow7wA0kG/lithium-fabric-0.21.4%2Bmc1.21.11.jar',
+        sha512: 'f14a5c3d2fad786347ca25083f902139694f618b7c103947f2fd067a7c5ee88a63e1ef8926f7d693ea79ed7d00f57317bae77ef9c2d630bf5ed01ac97a752b94'
+    ],
+    [
+        output: 'ferrite-core-8.2.0-fabric.jar',
+        url: 'https://cdn.modrinth.com/data/uXXizFIs/versions/Ii0gP3D8/ferritecore-8.2.0-fabric.jar',
+        sha512: '3210926a82eb32efd9bcebabe2f6c053daf5c4337eebc6d5bacba96d283510afbde646e7e195751de795ec70a2ea44fef77cb54bf22c8e57bb832d6217418869'
+    ],
+    [
+        output: 'immediatelyfast-1.14.3+1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/5ZwdcRci/versions/4EwhsTu7/ImmediatelyFast-Fabric-1.14.3%2B1.21.11.jar',
+        sha512: '2564cb28259352c3aa5759aceca62667de08a7860a40910dad40a043af851a074b2d75cef50b9fa6f1971febb3a5ecebe4067cbd4b60e63ef711b85f4bc21407'
+    ],
+    [
+        output: 'c2me-0.3.6.0.0-mc1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/VSNURh3q/versions/olrVZpJd/c2me-fabric-mc1.21.11-0.3.6.0.0.jar',
+        sha512: 'c9b11100572fb71c3080ff11b011467624e8013b9942aade09a5c77eb62b3289667bad70501ddea8f35deb0a5d26884b79f76d4ed112d32342471ca7384b788a'
+    ],
+    [
+        output: 'krypton-0.2.10.jar',
+        url: 'https://cdn.modrinth.com/data/fQEb0iXm/versions/O9LmWYR7/krypton-0.2.10.jar',
+        sha512: '4dcd7228d1890ddfc78c99ff284b45f9cf40aae77ef6359308e26d06fa0d938365255696af4cc12d524c46c4886cdcd19268c165a2bf0a2835202fe857da5cab'
+    ],
+    [
+        output: 'mouse-tweaks-2.30-mc1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/aC3cM3Vq/versions/i1duwnJl/MouseTweaks-fabric-mc1.21.11-2.30.jar',
+        sha512: 'bc2202d067f997a191d6e435d326e12cc5756b72c076e0e342e9f3119dbeb29de7b77fac62d8b48a60e657c79e35bc7e248df969d43f9b5e53492f7890fc2b9c'
+    ],
+    [
+        output: 'ukus-armor-hud-0.10.2+mc1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/wF189hn9/versions/ZDZWmIsH/ukus-armor-hud-0.10.2%2Bmc1.21.11.jar',
+        sha512: 'eb5e7b09b101782e220cfab6e5f9791c0b1d9c668d84017080818febe2fac579acbc03855c000b60a27dc5b50b6a384646e1396c9b853554c5bcb97567b4d3ec'
+    ],
+    [
+        output: 'ukulib-1.10.2+1.21.11.jar',
+        url: 'https://cdn.modrinth.com/data/Y8uFrUil/versions/t9ZJ7RPT/ukulib-1.10.2%2B1.21.11.jar',
+        sha512: 'b910faa547c636a73d800d1b9afb66fe92fdfd33caf81a535057db04b814370898b36dce784b2fed8237965cea8c1e2f75871b91bf3c205bfd3382b64878c5a3'
+    ]
+]
+
+def libsDir = file('libs')
+def embeddedJars = sharedMods.collect { m -> file("libs/${m.output}") }
+
+// Dev-runtime-only helpers: the nested (jar-in-jar) mods and libraries that
+// Fabric Loader's JIJ resolution pulls automatically from a mods-folder install,
+// but which the dev classpath (runClient) cannot load from inside a classpath
+// dependency. Every nested jar of every embedded mod is extracted to devlibs so
+// the dev runtime matches production. Not embedded and not committed.
+def devLibsDir = file('devlibs')
+devLibsDir.mkdirs()
+def devExtractNested = { File source, File destDir ->
+    if (!source.exists()) {
+        return
+    }
+    def zip = new java.util.zip.ZipFile(source)
+    try {
+        zip.entries().each { entry ->
+            if (entry.name.startsWith('META-INF/jars/') && entry.name.endsWith('.jar')) {
+                def out = new File(destDir, entry.name.substring('META-INF/jars/'.length()))
+                if (!out.exists()) {
+                    zip.getInputStream(entry).withCloseable { ins ->
+                        out.withOutputStream { os -> ins.transferTo(os) }
+                    }
+                }
+            }
+        }
+    } finally {
+        zip.close()
+    }
+}
+embeddedJars.each { lib -> devExtractNested(lib, devLibsDir) }
+// c2me's native-math optional module requires Java >= 22; dev uses the
+// configured Java 21 toolchain, so it is left out of the dev runtime only.
+def devOnlyJars = (devLibsDir.listFiles() ?: []).findAll {
+    it.name != 'c2me-opts-natives-math-mc1.21.11-0.3.6.0.0.jar'
+}
+
+def devRuntimeJars = embeddedJars + devOnlyJars
+
+def download = { File target, String url ->
+    def conn = new URL(url).openConnection()
+    conn.connectTimeout = 30_000
+    conn.readTimeout = 120_000
+    conn.setRequestProperty('User-Agent', 'aethelon/0.1.0 (build script)')
+    conn.connect()
+    target.withOutputStream { os ->
+        conn.inputStream.withCloseable { ins -> ins.transferTo(os) }
+    }
+}
+
+def sha512 = { File f ->
+    def md = MessageDigest.getInstance('SHA-512')
+    f.eachByte(8192) { buf, n -> md.update(buf, 0, n) }
+    md.digest().collect { String.format('%02x', it) }.join('')
+}
+
+// Loom inspects (and checksums) file-based mod dependencies during the
+// configuration phase, so the pinned jars must already exist by then. Download
+// and verify them here, at configuration time, instead of in a lazy task.
+sharedMods.each { m ->
+    def out = file("libs/${m.output}")
+    if (out.exists() && sha512(out).equalsIgnoreCase(m.sha512)) {
+        return
+    }
+    libsDir.mkdirs()
+    logger.lifecycle("[aethelon] Fetching ${m.output} ...")
+    download(out, m.url)
+    def check = sha512(out)
+    if (!check.equalsIgnoreCase(m.sha512)) {
+        out.delete()
+        throw new GradleException("SHA-512 mismatch for ${m.output}: expected ${m.sha512}, got ${check}")
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Third-party mods: on the dev runtime classpath, and nested into the final
+    // jar (META-INF/jars) so a single install works. Fabric Loader loads every
+    // jar found under META-INF/jars automatically.
+    devRuntimeJars.each { lib ->
+        modRuntimeOnly files(lib)
+    }
+}
+
+// Nest the pinned mods inside the produced mod jar as jar-in-jar.
+jar {
+    from(libsDir) {
+        include('*.jar')
+        into('META-INF/jars')
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}

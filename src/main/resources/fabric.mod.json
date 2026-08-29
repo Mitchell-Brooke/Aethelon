@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "aethelon",
+  "version": "${version}",
+  "name": "Aethelon",
+  "description": "A client-side survival utility mod: press Right Shift for a feature menu (left click to toggle, right click for settings). Ships with pinned, license-safe performance mods bundled via jar-in-jar.",
+  "authors": [
+    "Mitchell-Brooke"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Mitchell-Brooke/Aethelon",
+    "sources": "https://github.com/Mitchell-Brooke/Aethelon",
+    "issues": "https://github.com/Mitchell-Brooke/Aethelon/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/aethelon/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.aethelon.AethelonClient"
+    ]
+  },
+  "mixins": [
+    "aethelon.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21.11",
+    "java": ">=21"
+  },
+  "recommends": {
+    "sodium": "*",
+    "entityculling": "*"
+  }
+}

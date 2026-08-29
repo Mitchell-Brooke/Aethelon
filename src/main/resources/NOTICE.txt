@@ -1,0 +1,105 @@
+Aethelon - Third-party software notices
+=======================================
+
+The Aethelon mod itself is MIT licensed (see LICENSE).
+Aethelon bundles several third-party Fabric mods inside its own jar via
+jar-in-jar so that a single file installs the whole pack (plus two optional
+mods that are installed separately because their licenses do not permit
+redistribution, see the "Not bundled" section below).
+
+None of the third-party binaries are committed to this repository. They are
+downloaded at build time from the Modrinth CDN and pinned by SHA-512 in
+build.gradle.
+
+Bundled (jar-in-jar)
+--------------------
+
+1. Fabric API
+   Version: 0.141.6+1.21.11
+   Author: FabricMC
+   Source: https://github.com/FabricMC/fabric
+   License: Apache-2.0
+   Full text: https://www.apache.org/licenses/LICENSE-2.0.txt
+
+2. Lithium
+   Version: mc1.21.11-0.21.4-fabric
+   Author: CaffeineMC
+   Source: https://github.com/CaffeineMC/lithium-fabric
+   License: LGPL-3.0-only
+   Full text: https://www.gnu.org/licenses/lgpl-3.0.txt
+
+3. FerriteCore
+   Version: 8.2.0-fabric
+   Author: mrjameslai
+   Source: https://github.com/mrjameslai/ferrite-core
+   License: MIT
+   Full text: https://opensource.org/license/mit
+
+4. ImmediatelyFast
+   Version: 1.14.3+1.21.11-fabric
+   Author: RaphiMC
+   Source: https://github.com/RaphiMC/ImmediatelyFast
+   License: LGPL-3.0-only
+   Full text: https://www.gnu.org/licenses/lgpl-3.0.txt
+
+5. C2ME (Concurrent Chunk Management Engine)
+   Version: 0.3.6.0.0
+   Author: RelativityMC
+   Source: https://github.com/RelativityMC/C2ME-fabric
+   License: MIT
+   Full text: https://opensource.org/license/mit
+
+6. Krypton
+   Version: 0.2.10
+   Author: astei
+   Source: https://github.com/astei/krypton
+   License: LGPL-3.0-only
+   Full text: https://www.gnu.org/licenses/lgpl-3.0.txt
+
+7. Mouse Tweaks
+   Version: 1.21.11-2.30-fabric
+   Author: YaLTeR
+   Source: https://github.com/YaLTeR/MouseTweaks
+   License: BSD-3-Clause
+   Full text: https://opensource.org/license/bsd-3-clause
+
+8. uku's Armor HUD
+   Version: 0.10.2+mc1.21.11
+   Author: ukulomme (uku)
+   Source: https://modrinth.com/mod/ukus-armor-hud
+   License: MIT
+   Full text: https://opensource.org/license/mit
+
+9. ukulib
+   Version: 1.10.2+1.21.11
+   Author: ukulomme (uku)
+   Source: https://modrinth.com/project/ukulib
+   License: MPL-2.0
+   Full text: https://www.mozilla.org/en-US/MPL/2.0/
+
+Not bundled (installed separately by scripts/install-mods.ps1)
+---------------------------------------------------------------
+
+The authors of these projects do not permit redistribution of their mods, so
+Aethelon does NOT include them. They are downloaded and verified by the install
+script straight from each project's own channel when you run it.
+
+10. Sodium
+    Version: mc1.21.11-0.8.14-fabric
+    Author: CaffeineMC
+    Source: https://github.com/CaffeineMC/sodium
+    License: Polyform Shield 1.0.0 (uncapped)
+    Full text: https://polyformproject.org/licenses/shield/1.0.0/
+
+11. EntityCulling
+    Version: 1.10.5
+    Author: tr7zw
+    Source: https://github.com/tr7zw/EntityCulling
+    License: tr7zw Protective License
+    Full text: https://github.com/tr7zw/EntityCulling/blob/master/LICENSE
+
+Minecraft, the Minecraft logo and all game assets belong to Mojang Studios /
+Microsoft. Aethelon is an independent mod and is not affiliated with, endorsed
+by, or sponsored by Mojang Studios or Microsoft.
+
+The full text of each license can be obtained at the URLs listed above.

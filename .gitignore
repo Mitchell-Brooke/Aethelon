@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+
+# Downloaded third-party mod jars (never commit)
+libs/
+
+# Dev-runtime-only nested mods extracted for runClient (never commit)
+devlibs/
+
+# Dev run directory
+run/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# OS
+Thumbs.db
+.DS_Store
