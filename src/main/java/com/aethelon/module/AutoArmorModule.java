@@ -9,7 +9,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
@@ -31,6 +30,7 @@ public class AutoArmorModule extends Module {
     private int stage = STAGE_IDLE;
     private int pendSlot = -1;
     private int pendArmorSlot = -1;
+    private ItemStack pendItem = ItemStack.EMPTY;
 
     public AutoArmorModule(AutoArmorSettings settings) {
         super("auto_armor", "Auto Armor", settings.enabled);
@@ -47,11 +47,9 @@ public class AutoArmorModule extends Module {
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (!valid(player)) {
-            reset();
-            return;
-        }
-        if (player.containerMenu != player.inventoryMenu) {
+        if (player == null || mc.level == null || mc.screen != null || player.isSpectator()
+                || player.isDeadOrDying() || !(player.containerMenu instanceof InventoryMenu)
+                || player.containerMenu != player.inventoryMenu) {
             reset();
             return;
         }
@@ -60,23 +58,16 @@ public class AutoArmorModule extends Module {
             return;
         }
         switch (stage) {
-            case STAGE_IDLE -> scan(player);
-            case STAGE_QUICK_MOVE -> doQuickMove(player, pendSlot);
-            case STAGE_PICKUP -> doPickup(player, pendSlot);
-            case STAGE_PICKUP_ARMOR -> doPickup(player, pendArmorSlot);
-            case STAGE_PLACE_BACK -> doPickup(player, pendSlot);
+            case STAGE_IDLE -> {
+                if (player.inventoryMenu.getCarried().isEmpty()) {
+                    scan(player);
+                }
+            }
+            case STAGE_QUICK_MOVE -> doQuickMove(player, pendSlot, STAGE_IDLE, false);
+            case STAGE_PICKUP -> doPickup(player, pendSlot, STAGE_PICKUP_ARMOR, true);
+            case STAGE_PICKUP_ARMOR -> doPickup(player, pendArmorSlot, STAGE_PLACE_BACK, false);
+            case STAGE_PLACE_BACK -> doPickup(player, pendSlot, STAGE_IDLE, false);
         }
-    }
-
-    private boolean valid(LocalPlayer player) {
-        if (player == null || Minecraft.getInstance().level == null) {
-            return false;
-        }
-        if (Minecraft.getInstance().screen != null || player.isSpectator() || player.isDeadOrDying()) {
-            return false;
-        }
-        AbstractContainerMenu menu = player.containerMenu;
-        return menu instanceof InventoryMenu && menu.getCarried().isEmpty();
     }
 
     private void scan(LocalPlayer player) {
@@ -93,6 +84,7 @@ public class AutoArmorModule extends Module {
             }
             int bestIndex = -1;
             double bestScore = Double.NEGATIVE_INFINITY;
+            ItemStack bestStack = ItemStack.EMPTY;
             List<ItemStack> items = player.getInventory().getNonEquipmentItems();
             for (int i = 0; i < items.size(); i++) {
                 ItemStack stack = items.get(i);
@@ -113,84 +105,90 @@ public class AutoArmorModule extends Module {
                 if (score > bestScore) {
                     bestScore = score;
                     bestIndex = i;
+                    bestStack = stack;
                 }
             }
             if (bestIndex >= 0) {
                 double wornScore = worn.isEmpty() ? 0.0D : score(worn, armorDefense(worn, type));
                 if (bestScore >= wornScore + settings.upgradeThreshold) {
-                    startEquip(player, bestIndex, worn.isEmpty());
+                    startEquip(player, bestIndex, bestStack, worn.isEmpty());
                     return;
                 }
             }
         }
     }
 
-    private void startEquip(LocalPlayer player, int itemIndex, boolean quickMove) {
-        Minecraft mc = Minecraft.getInstance();
-        InventoryMenu menu = player.inventoryMenu;
-        List<ItemStack> items = player.getInventory().getNonEquipmentItems();
-        ItemStack stack = items.get(itemIndex);
+    private void startEquip(LocalPlayer player, int itemIndex, ItemStack stack, boolean quickMove) {
         int serverSlot = itemIndex < 9 ? 36 + itemIndex : itemIndex;
         int armorSlot = armorServerSlot(player.getEquipmentSlotForItem(stack));
         pendSlot = serverSlot;
         pendArmorSlot = armorSlot;
-        if (quickMove) {
-            stage = STAGE_QUICK_MOVE;
-            timer = 0;
+        pendItem = stack.copy();
+        stage = quickMove ? STAGE_QUICK_MOVE : STAGE_PICKUP;
+        timer = 0;
+    }
+
+    private void doQuickMove(LocalPlayer player, int serverSlot, int nextStage, boolean finishDelay) {
+        Minecraft mc = Minecraft.getInstance();
+        InventoryMenu menu = player.inventoryMenu;
+        if (mc.gameMode == null || !menu.getCarried().isEmpty()) {
+            reset();
+            return;
+        }
+        ItemStack atSlot = menu.getSlot(serverSlot).getItem();
+        if (atSlot.isEmpty()) {
+            reset();
+            return;
+        }
+        int armorSlot = armorServerSlot(player.getEquipmentSlotForItem(atSlot));
+        if (!menu.getSlot(armorSlot).getItem().isEmpty()) {
+            reset();
+            return;
+        }
+        mc.gameMode.handleInventoryMouseClick(0, serverSlot, 0, ClickType.QUICK_MOVE, player);
+        advance(nextStage, finishDelay);
+    }
+
+    private void doPickup(LocalPlayer player, int serverSlot, int nextStage, boolean first) {
+        Minecraft mc = Minecraft.getInstance();
+        InventoryMenu menu = player.inventoryMenu;
+        if (mc.gameMode == null || serverSlot < 0 || serverSlot >= menu.slots.size()) {
+            reset();
+            return;
+        }
+        boolean ok;
+        if (first) {
+            ok = menu.getCarried().isEmpty() && !menu.getSlot(pendSlot).getItem().isEmpty();
+        } else if (stage == STAGE_PICKUP_ARMOR) {
+            ItemStack carried = menu.getCarried();
+            ok = !carried.isEmpty() && ItemStack.isSameItemSameComponents(carried, pendItem)
+                    && !menu.getSlot(pendArmorSlot).getItem().isEmpty();
         } else {
-            stage = STAGE_PICKUP;
-            timer = 0;
+            ok = !menu.getCarried().isEmpty() && menu.getSlot(pendSlot).getItem().isEmpty();
         }
-        if (mc.gameMode != null && System.getProperty("aethelon.selfTest") != null) {
-            System.out.println("[aethelon] selfTest: auto-armor selected " + stack + " at slot " + serverSlot
-                    + " -> armor slot " + armorSlot + (quickMove ? " (quick move)" : " (swap)"));
-        }
-    }
-
-    private void doQuickMove(LocalPlayer player, int serverSlot) {
-        if (!clickAllowed(player)) {
+        if (!ok) {
             reset();
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.gameMode != null && !player.inventoryMenu.getSlot(serverSlot).getItem().isEmpty()
-                && player.inventoryMenu.getSlot(armorServerSlot(player.getEquipmentSlotForItem(
-                player.inventoryMenu.getSlot(serverSlot).getItem()))).getItem().isEmpty()) {
-            mc.gameMode.handleInventoryMouseClick(0, serverSlot, 0, ClickType.QUICK_MOVE, player);
-        }
-        stage = STAGE_IDLE;
-        timer = randomDelay(settings.equipDelayMin, settings.equipDelayMax);
+        mc.gameMode.handleInventoryMouseClick(0, serverSlot, 0, ClickType.PICKUP, player);
+        advance(nextStage, nextStage == STAGE_IDLE);
     }
 
-    private void doPickup(LocalPlayer player, int serverSlot) {
-        if (!clickAllowed(player)) {
-            reset();
-            return;
-        }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.gameMode != null && serverSlot >= 0 && serverSlot < player.inventoryMenu.slots.size()) {
-            mc.gameMode.handleInventoryMouseClick(0, serverSlot, 0, ClickType.PICKUP, player);
-        }
-        stage = nextStage(stage);
-        timer = randomClickGap();
-    }
-
-    private int nextStage(int current) {
-        return switch (current) {
-            case STAGE_PICKUP -> STAGE_PICKUP_ARMOR;
-            default -> STAGE_PLACE_BACK;
-        };
-    }
-
-    private boolean clickAllowed(LocalPlayer player) {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.screen == null && !player.isSpectator() && !player.isDeadOrDying()
-                && player.containerMenu == player.inventoryMenu
-                && mc.gameMode != null;
+    private void advance(int nextStage, boolean finishDelay) {
+        stage = nextStage;
+        timer = finishDelay
+                ? randomDelay(settings.equipDelayMin, settings.equipDelayMax)
+                : randomClickGap();
     }
 
     private int armorServerSlot(EquipmentSlot type) {
-        return 8 - type.getIndex();
+        return switch (type) {
+            case HEAD -> 5;
+            case CHEST -> 6;
+            case LEGS -> 7;
+            case FEET -> 8;
+            default -> -1;
+        };
     }
 
     private double armorDefense(ItemStack stack, EquipmentSlot slot) {
@@ -242,6 +240,7 @@ public class AutoArmorModule extends Module {
         timer = 0;
         pendSlot = -1;
         pendArmorSlot = -1;
+        pendItem = ItemStack.EMPTY;
     }
 
     @Override
