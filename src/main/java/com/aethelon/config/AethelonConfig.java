@@ -14,6 +14,7 @@ public class AethelonConfig {
         public int minSpeedImprovementPct = 10;
         public int swapDelayMin = 1;
         public int swapDelayMax = 5;
+        public String strategy = "fastest";
     }
 
     public final AutoToolSettings autoTool = new AutoToolSettings();
@@ -34,6 +35,10 @@ public class AethelonConfig {
                 autoTool.minSpeedImprovementPct = loaded.autoTool.minSpeedImprovementPct;
                 autoTool.swapDelayMin = loaded.autoTool.swapDelayMin;
                 autoTool.swapDelayMax = Math.max(loaded.autoTool.swapDelayMax, autoTool.swapDelayMin);
+                autoTool.strategy = loaded.autoTool.strategy;
+                if (autoTool.strategy == null || !("fastest".equals(autoTool.strategy) || "durability".equals(autoTool.strategy))) {
+                    autoTool.strategy = "fastest";
+                }
             }
         } catch (Exception e) {
             System.err.println("[aethelon] Failed to load config: " + e.getMessage());

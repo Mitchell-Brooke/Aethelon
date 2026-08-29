@@ -42,7 +42,7 @@ public abstract class Module {
     public void onBlockBreakStart(BlockPos pos, Direction direction) {
     }
 
-    public List<IntSetting> settings() {
+    public List<Setting> settings() {
         return List.of();
     }
 }

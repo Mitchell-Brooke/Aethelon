@@ -66,9 +66,9 @@ public class AethelonMainScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        guiGraphics.drawCenteredString(this.font, "Aethelon", this.width / 2, 40, 0xE0E0E0);
+        guiGraphics.drawCenteredString(this.font, "Aethelon", this.width / 2, 40, 0xFFE0E0E0);
         guiGraphics.drawCenteredString(this.font, "Left click to toggle - Right click for settings",
-                this.width / 2, this.height - 30, 0x888888);
+                this.width / 2, this.height - 30, 0xFF888888);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 }

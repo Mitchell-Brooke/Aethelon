@@ -17,31 +17,48 @@ public final class ToolSolver {
     private ToolSolver() {
     }
 
-    public static int bestSlot(Player player, BlockState state, int minImprovementPct) {
+    public static int bestSlot(Player player, BlockState state, int minImprovementPct, String strategy) {
         Holder<Enchantment> efficiency = getEfficiencyHolder();
         Inventory inv = player.getInventory();
         int current = inv.getSelectedSlot();
         ItemStack currentStack = inv.getItem(current);
         float currentScore = score(currentStack, state, efficiency);
+        float threshold = currentScore * (1 + Math.max(0, minImprovementPct) / 100f);
 
+        boolean preferDurability = "durability".equals(strategy);
         int best = -1;
         float bestScore = -1f;
+        int bestRemaining = -1;
         for (int i = 0; i < 9; i++) {
             if (i == current) {
                 continue;
             }
             ItemStack stack = inv.getItem(i);
             float s = score(stack, state, efficiency);
-            if (s > bestScore) {
+            if (preferDurability) {
+                if (s < threshold) {
+                    continue;
+                }
+                int remaining = remainingDurability(stack);
+                if (remaining > bestRemaining || (remaining == bestRemaining && s > bestScore)) {
+                    bestRemaining = remaining;
+                    bestScore = s;
+                    best = i;
+                }
+            } else if (s > bestScore) {
                 bestScore = s;
                 best = i;
             }
         }
-        if (best < 0 || bestScore <= currentScore) {
+        if (best < 0) {
             return -1;
         }
-        float threshold = currentScore * (1 + Math.max(0, minImprovementPct) / 100f);
-        return bestScore >= threshold ? best : -1;
+        return preferDurability || bestScore >= threshold ? best : -1;
+    }
+
+    private static int remainingDurability(ItemStack stack) {
+        int max = stack.getMaxDamage();
+        return max <= 0 ? Integer.MAX_VALUE : max - stack.getDamageValue();
     }
 
     private static Holder<Enchantment> getEfficiencyHolder() {

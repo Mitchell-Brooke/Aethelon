@@ -1,8 +1,8 @@
 package com.aethelon.gui;
 
 import com.aethelon.AethelonClient;
-import com.aethelon.module.IntSetting;
 import com.aethelon.module.Module;
+import com.aethelon.module.Setting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleSettingsScreen extends Screen {
-    private record Row(IntSetting setting, int baselineY) {
+    private record Row(Setting setting, int baselineY) {
     }
 
     private final Module module;
@@ -29,11 +29,11 @@ public class ModuleSettingsScreen extends Screen {
         int width = 300;
         int cx = (this.width - width) / 2;
         int y = 80;
-        for (IntSetting setting : module.settings()) {
-            this.addRenderableWidget(Button.builder(Component.literal("-"), btn -> change(setting, -1))
+        for (Setting setting : module.settings()) {
+            this.addRenderableWidget(Button.builder(Component.literal("-"), btn -> this.change(setting, -1))
                     .bounds(cx + width - 100, y, 20, 20)
                     .build());
-            this.addRenderableWidget(Button.builder(Component.literal("+"), btn -> change(setting, 1))
+            this.addRenderableWidget(Button.builder(Component.literal("+"), btn -> this.change(setting, 1))
                     .bounds(cx + width - 76, y, 20, 20)
                     .build());
             this.rows.add(new Row(setting, y));
@@ -44,20 +44,20 @@ public class ModuleSettingsScreen extends Screen {
                 .build());
     }
 
-    private void change(IntSetting setting, int delta) {
-        setting.set(Math.max(setting.min(), Math.min(setting.max(), setting.value() + delta)));
+    private void change(Setting setting, int delta) {
+        setting.applyDelta(delta);
         AethelonClient.INSTANCE.config.save();
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        guiGraphics.drawCenteredString(this.font, module.getDisplayName() + " Settings", this.width / 2, 40, 0xE0E0E0);
+        guiGraphics.drawCenteredString(this.font, module.getDisplayName() + " Settings", this.width / 2, 40, 0xFFE0E0E0);
         int width = 300;
         int cx = (this.width - width) / 2;
         for (Row row : rows) {
-            guiGraphics.drawString(this.font, row.setting.label(), cx + 24, row.baselineY() + 6, 0xC0C0C0);
-            guiGraphics.drawCenteredString(this.font, String.valueOf(row.setting.value()),
-                    cx + width - 46, row.baselineY() + 6, 0xFFFFFF);
+            guiGraphics.drawString(this.font, row.setting.label(), cx + 24, row.baselineY() + 6, 0xFFC0C0C0);
+            guiGraphics.drawCenteredString(this.font, row.setting.valueText(),
+                    cx + width - 46, row.baselineY() + 6, 0xFFFFFFFF);
         }
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
