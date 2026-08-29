@@ -13,6 +13,7 @@ public class ModuleManager {
 
     public void registerAll(AethelonClient client) {
         modules.add(new AutoToolModule(client.config.autoTool));
+        modules.add(new AutoFishModule(client.config.autoFish));
     }
 
     public List<Module> getModules() {

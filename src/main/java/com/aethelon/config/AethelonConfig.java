@@ -16,7 +16,17 @@ public class AethelonConfig {
         public String strategy = "fastest";
     }
 
+    public static class AutoFishSettings {
+        public boolean enabled = true;
+        public int reelDelayMin = 4;
+        public int reelDelayMax = 8;
+        public int recastDelayMin = 4;
+        public int recastDelayMax = 10;
+        public int noBiteTimeoutSec = 60;
+    }
+
     public final AutoToolSettings autoTool = new AutoToolSettings();
+    public final AutoFishSettings autoFish = new AutoFishSettings();
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final transient Path path = FabricLoader.getInstance().getConfigDir().resolve("aethelon.json");
@@ -36,6 +46,14 @@ public class AethelonConfig {
                 autoTool.strategy = loaded.autoTool.strategy;
                 if (autoTool.strategy == null || !("fastest".equals(autoTool.strategy) || "durability".equals(autoTool.strategy))) {
                     autoTool.strategy = "fastest";
+                }
+                if (loaded.autoFish != null) {
+                    autoFish.enabled = loaded.autoFish.enabled;
+                    autoFish.reelDelayMin = loaded.autoFish.reelDelayMin;
+                    autoFish.reelDelayMax = Math.max(loaded.autoFish.reelDelayMax, autoFish.reelDelayMin);
+                    autoFish.recastDelayMin = loaded.autoFish.recastDelayMin;
+                    autoFish.recastDelayMax = Math.max(loaded.autoFish.recastDelayMax, autoFish.recastDelayMin);
+                    autoFish.noBiteTimeoutSec = loaded.autoFish.noBiteTimeoutSec;
                 }
             }
         } catch (Exception e) {

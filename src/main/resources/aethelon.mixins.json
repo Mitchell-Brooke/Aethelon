@@ -6,7 +6,8 @@
   "client": [
     "MinecraftMixin",
     "MultiPlayerGameModeMixin",
-    "KeyboardHandlerMixin"
+    "KeyboardHandlerMixin",
+    "FishingHookAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
