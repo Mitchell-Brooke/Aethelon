@@ -14,6 +14,7 @@ public class ModuleManager {
     public void registerAll(AethelonClient client) {
         modules.add(new AutoToolModule(client.config.autoTool));
         modules.add(new AutoFishModule(client.config.autoFish));
+        modules.add(new AutoArmorModule(client.config.autoArmor));
     }
 
     public List<Module> getModules() {

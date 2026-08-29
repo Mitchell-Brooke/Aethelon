@@ -25,8 +25,17 @@ public class AethelonConfig {
         public int noBiteTimeoutSec = 60;
     }
 
+    public static class AutoArmorSettings {
+        public boolean enabled = true;
+        public int equipDelayMin = 2;
+        public int equipDelayMax = 6;
+        public int upgradeThreshold = 0;
+        public String scoreMode = "enchants";
+    }
+
     public final AutoToolSettings autoTool = new AutoToolSettings();
     public final AutoFishSettings autoFish = new AutoFishSettings();
+    public final AutoArmorSettings autoArmor = new AutoArmorSettings();
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final transient Path path = FabricLoader.getInstance().getConfigDir().resolve("aethelon.json");
@@ -54,6 +63,16 @@ public class AethelonConfig {
                     autoFish.recastDelayMin = loaded.autoFish.recastDelayMin;
                     autoFish.recastDelayMax = Math.max(loaded.autoFish.recastDelayMax, autoFish.recastDelayMin);
                     autoFish.noBiteTimeoutSec = loaded.autoFish.noBiteTimeoutSec;
+                }
+                if (loaded.autoArmor != null) {
+                    autoArmor.enabled = loaded.autoArmor.enabled;
+                    autoArmor.equipDelayMin = loaded.autoArmor.equipDelayMin;
+                    autoArmor.equipDelayMax = Math.max(loaded.autoArmor.equipDelayMax, autoArmor.equipDelayMin);
+                    autoArmor.upgradeThreshold = loaded.autoArmor.upgradeThreshold;
+                    autoArmor.scoreMode = loaded.autoArmor.scoreMode;
+                    if (!("enchants".equals(autoArmor.scoreMode) || "defense".equals(autoArmor.scoreMode))) {
+                        autoArmor.scoreMode = "enchants";
+                    }
                 }
             }
         } catch (Exception e) {
