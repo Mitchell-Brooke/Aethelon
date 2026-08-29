@@ -51,7 +51,6 @@ public class ModuleSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.drawCenteredString(this.font, module.getDisplayName() + " Settings", this.width / 2, 40, 0xE0E0E0);
         int width = 300;
         int cx = (this.width - width) / 2;
