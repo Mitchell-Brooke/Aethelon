@@ -18,8 +18,8 @@ public class AethelonConfig {
 
     public final AutoToolSettings autoTool = new AutoToolSettings();
 
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    private final Path path = FabricLoader.getInstance().getConfigDir().resolve("aethelon.json");
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final transient Path path = FabricLoader.getInstance().getConfigDir().resolve("aethelon.json");
 
     public void load() {
         if (!Files.exists(path)) {
