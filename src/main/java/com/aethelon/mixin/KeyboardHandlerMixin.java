@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class KeyboardHandlerMixin {
     @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
     private void aethelon$onKeyPress(long windowPointer, int key, KeyEvent event, CallbackInfo ci) {
-        if (key != GLFW.GLFW_KEY_RIGHT_SHIFT) {
+        if (event.key() != GLFW.GLFW_KEY_RIGHT_SHIFT) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
