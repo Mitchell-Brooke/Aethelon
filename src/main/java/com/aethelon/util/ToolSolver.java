@@ -17,13 +17,12 @@ public final class ToolSolver {
     private ToolSolver() {
     }
 
-    public static int bestSlot(Player player, BlockState state, int minImprovementPct, String strategy) {
+    public static int bestSlot(Player player, BlockState state, String strategy) {
         Holder<Enchantment> efficiency = getEfficiencyHolder();
         Inventory inv = player.getInventory();
         int current = inv.getSelectedSlot();
         ItemStack currentStack = inv.getItem(current);
         float currentScore = score(currentStack, state, efficiency);
-        float threshold = currentScore * (1 + Math.max(0, minImprovementPct) / 100f);
 
         boolean preferDurability = "durability".equals(strategy);
         int best = -1;
@@ -35,10 +34,10 @@ public final class ToolSolver {
             }
             ItemStack stack = inv.getItem(i);
             float s = score(stack, state, efficiency);
+            if (s <= currentScore) {
+                continue;
+            }
             if (preferDurability) {
-                if (s < threshold) {
-                    continue;
-                }
                 int remaining = remainingDurability(stack);
                 if (remaining > bestRemaining || (remaining == bestRemaining && s > bestScore)) {
                     bestRemaining = remaining;
@@ -50,10 +49,7 @@ public final class ToolSolver {
                 best = i;
             }
         }
-        if (best < 0) {
-            return -1;
-        }
-        return preferDurability || bestScore >= threshold ? best : -1;
+        return best;
     }
 
     private static int remainingDurability(ItemStack stack) {

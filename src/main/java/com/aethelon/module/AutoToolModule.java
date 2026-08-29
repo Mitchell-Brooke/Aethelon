@@ -40,7 +40,7 @@ public class AutoToolModule extends Module {
         if (state.isAir()) {
             return;
         }
-        int slot = ToolSolver.bestSlot(player, state, settings.minSpeedImprovementPct, settings.strategy);
+        int slot = ToolSolver.bestSlot(player, state, settings.strategy);
         if (slot < 0 || player.getInventory().getSelectedSlot() == slot || this.pendingSlot >= 0) {
             return;
         }
@@ -73,8 +73,6 @@ public class AutoToolModule extends Module {
     @Override
     public List<Setting> settings() {
         return List.of(
-                new IntSetting("Min. speed improvement %", 0, 100,
-                        () -> settings.minSpeedImprovementPct, v -> settings.minSpeedImprovementPct = v),
                 new IntSetting("Swap delay (min ticks)", 1, 20,
                         () -> settings.swapDelayMin, v -> settings.swapDelayMin = v),
                 new IntSetting("Swap delay (max ticks)", 1, 20,
