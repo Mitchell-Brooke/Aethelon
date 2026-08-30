@@ -114,6 +114,9 @@ public class AutoArmorModule extends Module {
             if (bestIndex >= 0) {
                 double wornScore = worn.isEmpty() ? 0.0D : score(worn, armorDefense(worn, type));
                 if (bestScore >= wornScore + settings.upgradeThreshold) {
+                    if (!worn.isEmpty() && countFreeInventorySlots(menu) < 1) {
+                        continue;
+                    }
                     startEquip(player, bestIndex, bestStack, worn.isEmpty());
                     return;
                 }
@@ -182,7 +185,18 @@ public class AutoArmorModule extends Module {
         if (target < 0 || !menu.getSlot(target).getItem().isEmpty()) {
             target = freeInventoryServerSlot(menu);
             if (target < 0) {
-                timer = 2;
+                boolean midSwap = pendArmorSlot >= 5 && pendArmorSlot <= 8 && pendSlot >= 9;
+                if (!midSwap) {
+                    timer = 2;
+                    return;
+                }
+                mc.gameMode.handleInventoryMouseClick(0, pendArmorSlot, 0, ClickType.PICKUP, player);
+                mc.gameMode.handleInventoryMouseClick(0, pendSlot, 0, ClickType.PICKUP, player);
+                stage = STAGE_IDLE;
+                timer = randomDelay(settings.equipDelayMin, settings.equipDelayMax);
+                pendSlot = -1;
+                pendArmorSlot = -1;
+                pendItem = ItemStack.EMPTY;
                 return;
             }
             pendSlot = target;
@@ -207,6 +221,16 @@ public class AutoArmorModule extends Module {
             }
         }
         return -1;
+    }
+
+    private int countFreeInventorySlots(InventoryMenu menu) {
+        int count = 0;
+        for (int i = 9; i <= 44; i++) {
+            if (menu.getSlot(i).getItem().isEmpty()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void advance(int nextStage, boolean finishDelay) {
