@@ -17,6 +17,8 @@ public class ModuleManager {
         modules.add(new AutoArmorModule(client.config.autoArmor));
         modules.add(new AutoTotemModule(client.config.autoTotem));
         modules.add(new SafeWalkModule(client.config.safeWalk));
+        modules.add(new AutoRefillModule(client.config.autoRefill));
+        modules.add(new AutoSwordModule(client.config.autoSword));
     }
 
     public List<Module> getModules() {

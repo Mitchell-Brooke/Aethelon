@@ -45,11 +45,27 @@ public class AethelonConfig {
         public int maxFallBlocks = 3;
     }
 
+    public static class AutoRefillSettings {
+        public boolean enabled = true;
+        public int minCount = 1;
+        public int clickDelayMin = 2;
+        public int clickDelayMax = 6;
+    }
+
+    public static class AutoSwordSettings {
+        public boolean enabled = true;
+        public int range = 6;
+        public boolean considerEnchants = true;
+        public int releaseDelayTicks = 15;
+    }
+
     public final AutoToolSettings autoTool = new AutoToolSettings();
     public final AutoFishSettings autoFish = new AutoFishSettings();
     public final AutoArmorSettings autoArmor = new AutoArmorSettings();
     public final AutoTotemSettings autoTotem = new AutoTotemSettings();
     public final SafeWalkSettings safeWalk = new SafeWalkSettings();
+    public final AutoRefillSettings autoRefill = new AutoRefillSettings();
+    public final AutoSwordSettings autoSword = new AutoSwordSettings();
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final transient Path path = FabricLoader.getInstance().getConfigDir().resolve("aethelon.json");
@@ -97,6 +113,18 @@ public class AethelonConfig {
                 if (loaded.safeWalk != null) {
                     safeWalk.enabled = loaded.safeWalk.enabled;
                     safeWalk.maxFallBlocks = Math.max(1, Math.min(10, loaded.safeWalk.maxFallBlocks));
+                }
+                if (loaded.autoRefill != null) {
+                    autoRefill.enabled = loaded.autoRefill.enabled;
+                    autoRefill.minCount = Math.max(1, Math.min(64, loaded.autoRefill.minCount));
+                    autoRefill.clickDelayMin = loaded.autoRefill.clickDelayMin;
+                    autoRefill.clickDelayMax = Math.max(loaded.autoRefill.clickDelayMax, autoRefill.clickDelayMin);
+                }
+                if (loaded.autoSword != null) {
+                    autoSword.enabled = loaded.autoSword.enabled;
+                    autoSword.range = Math.max(2, Math.min(16, loaded.autoSword.range));
+                    autoSword.considerEnchants = loaded.autoSword.considerEnchants;
+                    autoSword.releaseDelayTicks = Math.max(5, Math.min(120, loaded.autoSword.releaseDelayTicks));
                 }
             }
         } catch (Exception e) {
