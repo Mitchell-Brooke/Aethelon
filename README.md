@@ -1,7 +1,7 @@
 # Aethelon
 
 A client-side-only Fabric mod for Minecraft **1.21.11** that gives you a clean
-config menu (press **Right Shift**) and a few genuinely anti-cheat-safe survival
+config menu (press **Right Shift**) and anti-cheat-safe survival
 quality-of-life tools. It is designed so a single jar installs the whole "pack",
 with every bundled mod pinned to an exact version and SHA-512 checksummed.
 
