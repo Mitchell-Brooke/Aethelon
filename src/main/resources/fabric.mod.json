@@ -31,5 +31,34 @@
   "recommends": {
     "sodium": "*",
     "entityculling": "*"
-  }
+  },
+  "jars": [
+    {
+      "file": "META-INF/jars/ukus-armor-hud-0.10.2+mc1.21.11.jar"
+    },
+    {
+      "file": "META-INF/jars/ukulib-1.10.2+1.21.11.jar"
+    },
+    {
+      "file": "META-INF/jars/fabric-api-0.141.6+1.21.11.jar"
+    },
+    {
+      "file": "META-INF/jars/c2me-0.3.6.0.0-mc1.21.11.jar"
+    },
+    {
+      "file": "META-INF/jars/ferrite-core-8.2.0-fabric.jar"
+    },
+    {
+      "file": "META-INF/jars/immediatelyfast-1.14.3+1.21.11.jar"
+    },
+    {
+      "file": "META-INF/jars/krypton-0.2.10.jar"
+    },
+    {
+      "file": "META-INF/jars/lithium-0.21.4+mc1.21.11.jar"
+    },
+    {
+      "file": "META-INF/jars/mouse-tweaks-2.30-mc1.21.11.jar"
+    }
+  ]
 }
