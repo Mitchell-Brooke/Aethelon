@@ -2,7 +2,6 @@ package com.aethelon.module;
 
 import com.aethelon.config.AethelonConfig.AutoTotemSettings;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -15,19 +14,14 @@ import java.util.function.BooleanSupplier;
 
 public class AutoTotemModule extends Module {
     private static final int STAGE_IDLE = 0;
-    private static final int STAGE_PICKUP_TOTEM = 1;
-    private static final int STAGE_PLACE_OFFHAND = 2;
-    private static final int STAGE_PLACE_BACK = 3;
-    private static final int OFFHAND_SLOT = 45;
-    private static final int VERIFY_MAX = 15;
+    private static final int STAGE_SWAP = 1;
+    private static final int VERIFY_MAX = 20;
 
     private final AutoTotemSettings settings;
     private int stage = STAGE_IDLE;
     private int totemSlot = -1;
     private int timer = 0;
-    private boolean screenOwned = false;
     private int verifyTicks = 0;
-    private int nextStage = STAGE_IDLE;
     private BooleanSupplier verifyTarget = () -> true;
 
     public AutoTotemModule(AutoTotemSettings settings) {
@@ -51,20 +45,15 @@ public class AutoTotemModule extends Module {
             reset();
             return;
         }
-        if (mc.screen != null && !(mc.screen instanceof InventoryScreen)) {
-            reset();
-            return;
-        }
         InventoryMenu menu = player.inventoryMenu;
         if (verifyTicks > 0) {
             verifyTicks--;
             if (verifyTarget.getAsBoolean()) {
-                stage = nextStage;
-                nextStage = STAGE_IDLE;
                 verifyTicks = 0;
-                timer = randomClickGap();
+                finish(true);
             } else if (verifyTicks == 0) {
-                reset();
+                verifyTicks = 0;
+                finish(false);
             }
             return;
         }
@@ -72,36 +61,33 @@ public class AutoTotemModule extends Module {
             timer--;
             return;
         }
-        if (!menu.getSlot(OFFHAND_SLOT).getItem().is(Items.TOTEM_OF_UNDYING)) {
-            if (stage == STAGE_IDLE) {
-                if (!menu.getCarried().isEmpty()) {
-                    return;
-                }
-                int slot = findTotemServerSlot(player);
-                if (slot < 0) {
-                    return;
-                }
-                if (!menu.getSlot(OFFHAND_SLOT).getItem().isEmpty() && !settings.replaceOccupied) {
-                    return;
-                }
-                if (mc.screen == null) {
-                    mc.setScreen(new InventoryScreen(player));
-                    screenOwned = true;
-                    timer = 2;
-                    return;
-                }
-                totemSlot = slot;
-                stage = STAGE_PICKUP_TOTEM;
-            }
-        } else {
+        if (menu.getSlot(45).getItem().is(Items.TOTEM_OF_UNDYING)) {
             reset();
             return;
         }
-        switch (stage) {
-            case STAGE_PICKUP_TOTEM -> doPickup(player, totemSlot, STAGE_PLACE_OFFHAND,
-                    () -> !menu.getCarried().isEmpty());
-            case STAGE_PLACE_OFFHAND -> doPlaceOffhand(player);
-            case STAGE_PLACE_BACK -> doPlaceBack(player);
+        if (stage == STAGE_IDLE) {
+            if (!menu.getCarried().isEmpty()) {
+                return;
+            }
+            int slot = findTotemServerSlot(player);
+            if (slot < 0) {
+                return;
+            }
+            if (!menu.getSlot(45).getItem().isEmpty() && !settings.replaceOccupied) {
+                return;
+            }
+            totemSlot = slot;
+            stage = STAGE_SWAP;
+        }
+        if (stage == STAGE_SWAP) {
+            if (mc.gameMode == null || totemSlot < 0 || totemSlot >= menu.slots.size()) {
+                reset();
+                return;
+            }
+            mc.gameMode.handleInventoryMouseClick(0, totemSlot, 40, ClickType.SWAP, player);
+            stage = STAGE_IDLE;
+            verifyTarget = () -> menu.getSlot(45).getItem().is(Items.TOTEM_OF_UNDYING);
+            verifyTicks = VERIFY_MAX;
         }
     }
 
@@ -115,102 +101,16 @@ public class AutoTotemModule extends Module {
         return -1;
     }
 
-    private void doPickup(LocalPlayer player, int serverSlot, int nextStage, BooleanSupplier target) {
-        Minecraft mc = Minecraft.getInstance();
-        InventoryMenu menu = player.inventoryMenu;
-        if (mc.gameMode == null || serverSlot < 0 || serverSlot >= menu.slots.size()) {
-            reset();
-            return;
-        }
-        if (menu.getSlot(serverSlot).getItem().isEmpty()) {
-            reset();
-            return;
-        }
-        mc.gameMode.handleInventoryMouseClick(0, serverSlot, 0, ClickType.PICKUP, player);
-        this.nextStage = nextStage;
-        this.verifyTarget = target;
-        this.verifyTicks = VERIFY_MAX;
-    }
-
-    private void doPlaceOffhand(LocalPlayer player) {
-        Minecraft mc = Minecraft.getInstance();
-        InventoryMenu menu = player.inventoryMenu;
-        if (mc.gameMode == null) {
-            reset();
-            return;
-        }
-        if (menu.getCarried().isEmpty()) {
-            finish(player);
-            return;
-        }
-        if (menu.getSlot(OFFHAND_SLOT).getItem().is(Items.TOTEM_OF_UNDYING)) {
-            finish(player);
-            return;
-        }
-        mc.gameMode.handleInventoryMouseClick(0, OFFHAND_SLOT, 0, ClickType.PICKUP, player);
-        this.nextStage = STAGE_PLACE_BACK;
-        this.verifyTarget = () -> menu.getSlot(OFFHAND_SLOT).getItem().is(Items.TOTEM_OF_UNDYING);
-        this.verifyTicks = VERIFY_MAX;
-    }
-
-    private void doPlaceBack(LocalPlayer player) {
-        Minecraft mc = Minecraft.getInstance();
-        InventoryMenu menu = player.inventoryMenu;
-        if (mc.gameMode == null) {
-            reset();
-            return;
-        }
-        if (menu.getCarried().isEmpty()) {
-            finish(player);
-            return;
-        }
-        int target = totemSlot;
-        if (target < 0 || !menu.getSlot(target).getItem().isEmpty()) {
-            target = freeInventoryServerSlot(menu);
-            if (target < 0) {
-                timer = 2;
-                return;
-            }
-        }
-        mc.gameMode.handleInventoryMouseClick(0, target, 0, ClickType.PICKUP, player);
-        this.nextStage = STAGE_IDLE;
-        this.verifyTarget = () -> menu.getCarried().isEmpty();
-        this.verifyTicks = VERIFY_MAX;
-    }
-
-    private void finish(LocalPlayer player) {
-        if (player.inventoryMenu.getSlot(OFFHAND_SLOT).getItem().is(Items.TOTEM_OF_UNDYING)) {
-            closeOwnedScreen(player);
-            stage = STAGE_IDLE;
-            totemSlot = -1;
-            timer = randomDelay(settings.swapDelayMin, settings.swapDelayMax);
-        } else {
-            closeOwnedScreen(player);
+    private void finish(boolean success) {
+        if (!success) {
             stage = STAGE_IDLE;
             totemSlot = -1;
             timer = 2;
+            return;
         }
-    }
-
-    private void closeOwnedScreen(LocalPlayer player) {
-        if (screenOwned && Minecraft.getInstance().screen instanceof InventoryScreen) {
-            player.closeContainer();
-        }
-        screenOwned = false;
-    }
-
-    private int freeInventoryServerSlot(InventoryMenu menu) {
-        for (int i = 36; i <= 44; i++) {
-            if (menu.getSlot(i).getItem().isEmpty()) {
-                return i;
-            }
-        }
-        for (int i = 9; i <= 35; i++) {
-            if (menu.getSlot(i).getItem().isEmpty()) {
-                return i;
-            }
-        }
-        return -1;
+        stage = STAGE_IDLE;
+        totemSlot = -1;
+        timer = randomDelay(settings.swapDelayMin, settings.swapDelayMax);
     }
 
     private int randomDelay(int min, int max) {
@@ -219,25 +119,12 @@ public class AutoTotemModule extends Module {
         return lo + ThreadLocalRandom.current().nextInt(hi - lo + 1);
     }
 
-    private int randomClickGap() {
-        int lo = Math.max(1, settings.swapDelayMin);
-        int hi = Math.max(lo, settings.swapDelayMax);
-        return lo + ThreadLocalRandom.current().nextInt(hi - lo + 1);
-    }
-
     private void reset() {
-        Minecraft mc = Minecraft.getInstance();
-        LocalPlayer player = mc.player;
-        if (screenOwned && player != null && mc.screen instanceof InventoryScreen) {
-            player.closeContainer();
-        }
-        screenOwned = false;
         stage = STAGE_IDLE;
         totemSlot = -1;
         timer = 0;
         verifyTicks = 0;
         verifyTarget = () -> true;
-        nextStage = STAGE_IDLE;
     }
 
     @Override
