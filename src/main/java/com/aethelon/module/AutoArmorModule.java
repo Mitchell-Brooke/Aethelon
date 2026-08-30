@@ -5,6 +5,8 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -265,7 +267,15 @@ public class AutoArmorModule extends Module {
         if ("enchants".equals(settings.scoreMode)) {
             score += protectionLevel(stack) * 3.0D;
         }
+        if (isNetherite(stack)) {
+            score += 1.0D;
+        }
         return score;
+    }
+
+    private boolean isNetherite(ItemStack stack) {
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return "minecraft".equals(id.getNamespace()) && id.getPath().startsWith("netherite_");
     }
 
     private int protectionLevel(ItemStack stack) {
