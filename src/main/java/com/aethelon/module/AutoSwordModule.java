@@ -9,10 +9,11 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
@@ -110,8 +111,7 @@ public class AutoSwordModule extends Module {
         if (currentSelected < 0 || currentSelected > 8) {
             return;
         }
-        int bestHotbar = -1;
-        int bestMain = -1;
+        int bestSlot = -1;
         double bestScore = 0.0D;
         List<ItemStack> items = player.getInventory().getNonEquipmentItems();
         for (int i = 0; i < items.size(); i++) {
@@ -122,27 +122,26 @@ public class AutoSwordModule extends Module {
             double score = swordScore(stack);
             if (score > bestScore) {
                 bestScore = score;
-                bestHotbar = i < 9 ? i : bestHotbar;
-                bestMain = i >= 9 ? i : bestMain;
+                bestSlot = i;
             }
         }
-        if (bestScore <= 0.0D) {
+        if (bestScore <= 0.0D || bestSlot < 0) {
             return;
         }
         priorSlot = currentSelected;
         sourceMain = -1;
         attempt = 0;
         Minecraft mc = Minecraft.getInstance();
-        if (bestHotbar >= 0) {
-            armedSlot = bestHotbar;
-            if (armedSlot != currentSelected) {
-                selectSlot(player, armedSlot);
+        if (bestSlot < 9) {
+            if (bestSlot != currentSelected) {
+                selectSlot(player, bestSlot);
             }
+            armedSlot = bestSlot;
             stage = STAGE_COMBAT;
             linger = 0;
             return;
         }
-        int mainSlot = bestMain;
+        int mainSlot = bestSlot;
         if (mainSlot >= menu.slots.size() || mc.gameMode == null) {
             return;
         }
@@ -187,11 +186,18 @@ public class AutoSwordModule extends Module {
 
     private boolean hasTarget(LocalPlayer player) {
         double radius = settings.range;
-        List<Monster> mobs = player.level().getEntitiesOfClass(Monster.class,
-                player.getBoundingBox().inflate(radius));
-        for (Monster mob : mobs) {
+        double r2 = radius * radius;
+        for (Mob mob : player.level().getEntitiesOfClass(Mob.class,
+                player.getBoundingBox().inflate(radius))) {
             if (mob.isAlive() && !mob.isRemoved()
-                    && mob.distanceToSqr(player) <= radius * radius) {
+                    && mob.distanceToSqr(player) <= r2) {
+                return true;
+            }
+        }
+        for (Player other : player.level().getEntitiesOfClass(Player.class,
+                player.getBoundingBox().inflate(radius))) {
+            if (other != player && other.isAlive() && !other.isRemoved()
+                    && other.distanceToSqr(player) <= r2) {
                 return true;
             }
         }
