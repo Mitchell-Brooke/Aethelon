@@ -17,7 +17,7 @@ public class AutoRefillModule extends Module {
     private int coolDown = 0;
     private int verifyTicks = 0;
     private ItemStack pendingExpected = ItemStack.EMPTY;
-    private ItemStack lastSeen = ItemStack.EMPTY;
+    private ItemStack lastNonEmpty = ItemStack.EMPTY;
 
     public AutoRefillModule(AutoRefillSettings settings) {
         super("auto_refill", "Auto Refill", settings.enabled);
@@ -43,7 +43,6 @@ public class AutoRefillModule extends Module {
         InventoryMenu menu = player.inventoryMenu;
         int selected = player.getInventory().getSelectedSlot();
         if (selected < 0 || selected > 8) {
-            lastSeen = ItemStack.EMPTY;
             return;
         }
         ItemStack now = menu.getSlot(36 + selected).getItem();
@@ -53,26 +52,33 @@ public class AutoRefillModule extends Module {
                 verifyTicks = 0;
                 pendingExpected = ItemStack.EMPTY;
                 coolDown = randomDelay();
+                lastNonEmpty = now.copy();
             } else if (verifyTicks == 0) {
                 pendingExpected = ItemStack.EMPTY;
                 coolDown = 2;
             }
-            lastSeen = now;
+            if (!now.isEmpty()) {
+                lastNonEmpty = now.copy();
+            }
             return;
         }
         if (coolDown > 0) {
             coolDown--;
-            lastSeen = now;
+            if (!now.isEmpty()) {
+                lastNonEmpty = now.copy();
+            }
             return;
         }
-        boolean edgeEmpty = !lastSeen.isEmpty() && now.isEmpty();
-        boolean drained = !now.isEmpty()
-                && lastSeen.getCount() > now.getCount()
-                && now.getCount() < settings.minCount;
-        if (edgeEmpty || drained) {
-            attemptRefill(player, menu, now, selected, lastSeen);
+        if (!now.isEmpty()) {
+            lastNonEmpty = now.copy();
         }
-        lastSeen = now;
+        if (now.isEmpty()) {
+            if (!lastNonEmpty.isEmpty()) {
+                attemptRefill(player, menu, now, selected, lastNonEmpty);
+            }
+        } else if (now.getCount() < settings.minCount) {
+            attemptRefill(player, menu, now, selected, now);
+        }
     }
 
     private void attemptRefill(LocalPlayer player, InventoryMenu menu, ItemStack current, int selected, ItemStack desired) {
@@ -119,7 +125,7 @@ public class AutoRefillModule extends Module {
         coolDown = 0;
         verifyTicks = 0;
         pendingExpected = ItemStack.EMPTY;
-        lastSeen = ItemStack.EMPTY;
+        lastNonEmpty = ItemStack.EMPTY;
     }
 
     @Override
